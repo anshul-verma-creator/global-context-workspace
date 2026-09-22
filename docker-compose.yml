@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: context-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: context_admin
+      POSTGRES_PASSWORD: context_secure_password
+      POSTGRES_DB: context_workspace
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U context_admin -d context_workspace']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: context-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis_secure_password
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'redis_secure_password', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  context-server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: context-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://context_admin:context_secure_password@postgres:5432/context_workspace
+      REDIS_URL: redis://:redis_secure_password@redis:6379
+      CORS_ORIGIN: '*'
+      LOG_LEVEL: info
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  postgres_data:
+  redis_data:

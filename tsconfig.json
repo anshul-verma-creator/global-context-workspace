@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/protocol" },
+    { "path": "./packages/events" },
+    { "path": "./packages/database" },
+    { "path": "./packages/security" },
+    { "path": "./packages/retrieval" },
+    { "path": "./packages/context-compiler" },
+    { "path": "./packages/steno" },
+    { "path": "./packages/runtime" }
+  ]
+}

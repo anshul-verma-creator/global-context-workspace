@@ -1,0 +1,40 @@
+{
+  "name": "@context-workspace/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local runtime — session lifecycle, event loop, outbox processor, and context assembly",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@context-workspace/shared": "workspace:*",
+    "@context-workspace/protocol": "workspace:*",
+    "@context-workspace/database": "workspace:*",
+    "@context-workspace/events": "workspace:*",
+    "@context-workspace/security": "workspace:*",
+    "@context-workspace/retrieval": "workspace:*",
+    "@context-workspace/context-compiler": "workspace:*",
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

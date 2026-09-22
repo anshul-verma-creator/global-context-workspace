@@ -1,0 +1,26 @@
+{
+  "name": "@context-workspace/vscode-extension",
+  "displayName": "Global Context Workspace",
+  "description": "IDE extension for live agent activity, capsules, conflicts, and handoffs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/extension.js",
+  "types": "./dist/extension.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@context-workspace/shared": "workspace:*",
+    "@context-workspace/protocol": "workspace:*",
+    "@context-workspace/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

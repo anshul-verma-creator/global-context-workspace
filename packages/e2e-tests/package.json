@@ -1,0 +1,36 @@
+{
+  "name": "@context-workspace/e2e-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end, failure/recovery, performance, and security audit tests",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:e2e": "vitest run tests/multi-agent.test.ts",
+    "test:recovery": "vitest run tests/failure-recovery.test.ts",
+    "test:benchmarks": "vitest run tests/benchmarks.test.ts",
+    "test:security": "vitest run tests/security-audit.test.ts",
+    "test:prod": "vitest run tests/production-packaging.test.ts",
+    "test:acceptance": "vitest run tests/final-acceptance.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@context-workspace/shared": "workspace:*",
+    "@context-workspace/protocol": "workspace:*",
+    "@context-workspace/database": "workspace:*",
+    "@context-workspace/security": "workspace:*",
+    "@context-workspace/events": "workspace:*",
+    "@context-workspace/steno": "workspace:*",
+    "@context-workspace/retrieval": "workspace:*",
+    "@context-workspace/context-compiler": "workspace:*",
+    "@context-workspace/runtime": "workspace:*",
+    "@context-workspace/server": "workspace:*",
+    "@context-workspace/mcp": "workspace:*",
+    "@context-workspace/vscode-extension": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

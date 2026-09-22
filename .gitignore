@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+coverage/
+*.db
+*.db-shm
+*.db-wal
+*.chunk
+logs/

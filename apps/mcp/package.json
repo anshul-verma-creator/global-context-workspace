@@ -1,0 +1,32 @@
+{
+  "name": "@context-workspace/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Model Context Protocol (MCP) Server for Global Context Workspace",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "context-mcp": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@context-workspace/shared": "workspace:*",
+    "@context-workspace/protocol": "workspace:*",
+    "@context-workspace/database": "workspace:*",
+    "@context-workspace/runtime": "workspace:*",
+    "@context-workspace/retrieval": "workspace:*",
+    "@context-workspace/context-compiler": "workspace:*",
+    "@context-workspace/steno": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

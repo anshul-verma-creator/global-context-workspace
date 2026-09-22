@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../shared" },
+    { "path": "../protocol" },
+    { "path": "../database" },
+    { "path": "../events" },
+    { "path": "../security" },
+    { "path": "../retrieval" },
+    { "path": "../context-compiler" },
+    { "path": "../steno" }
+  ],
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -53,6 +53,18 @@ importers:
       '@context-workspace/steno':
         specifier: workspace:*
         version: link:../../packages/steno
+      '@fastify/cors':
+        specifier: ^10.0.0
+        version: 10.1.0
+      fastify:
+        specifier: ^5.0.0
+        version: 5.12.5
+      ioredis:
+        specifier: ^5.3.0
+        version: 5.11.1
+      postgres:
+        specifier: ^3.4.0
+        version: 3.4.9
     devDependencies:
       '@types/node':
         specifier: ^20.0.0

@@ -3,6 +3,7 @@ import { PlaceholderManager } from '@context-workspace/runtime';
 import { HandoffManager } from '@context-workspace/runtime';
 import { serializeStenoDocument } from '@context-workspace/steno';
 import { generateId, nowMs, createLogger } from '@context-workspace/shared';
+import type { CloudBackend } from './cloud-backend.js';
 
 const log = createLogger({ component: 'mcp-server' });
 
@@ -234,14 +235,16 @@ export class McpServer {
   private readonly runtime: ContextRuntime;
   private readonly placeholders: PlaceholderManager;
   private readonly handoffs: HandoffManager;
+  private readonly cloudBackend?: CloudBackend | undefined;
 
-  // In-memory leases map for local runtime (server uses PostgreSQL unique index)
+  // In-memory leases map for local runtime (used when cloud backend is not configured)
   private readonly leases = new Map<string, { resource: string; holderId: string; expiresAt: number }>();
 
-  constructor(runtime: ContextRuntime) {
+  constructor(runtime: ContextRuntime, cloudBackend?: CloudBackend) {
     this.runtime = runtime;
     this.placeholders = new PlaceholderManager(runtime.objects);
     this.handoffs = new HandoffManager(runtime.objects);
+    this.cloudBackend = cloudBackend;
   }
 
   /**
@@ -398,6 +401,9 @@ export class McpServer {
     uri: string,
   ): Promise<JsonRpcResponse> {
     try {
+      if (this.cloudBackend) {
+        await this.cloudBackend.syncFromCloud(this.runtime);
+      }
       const parsedUri = new URL(uri);
       const host = parsedUri.hostname;
       let text = '';
@@ -528,6 +534,10 @@ export class McpServer {
         const types = args['types'] as string[] | undefined;
         const limit = (args['limit'] as number | undefined) ?? 10;
 
+        if (this.cloudBackend) {
+          await this.cloudBackend.syncFromCloud(this.runtime, repositoryId);
+        }
+
         const objects = this.runtime.objects.searchFts(repositoryId, query, limit);
         const filtered = types && types.length > 0
           ? objects.filter((o) => types.includes(o.type))
@@ -556,7 +566,11 @@ export class McpServer {
 
       case 'context.get': {
         const objId = args['id'] as string;
-        const obj = this.runtime.objects.getById(objId);
+        let obj = this.runtime.objects.getById(objId);
+        if (!obj && this.cloudBackend) {
+          await this.cloudBackend.syncFromCloud(this.runtime);
+          obj = this.runtime.objects.getById(objId);
+        }
         if (!obj) {
           return {
             jsonrpc: '2.0',
@@ -575,6 +589,10 @@ export class McpServer {
         const task = args['task'] as string | undefined;
         const resource = args['resource'] as string | undefined;
         const tokenBudget = (args['tokenBudget'] as number | undefined) ?? 2000;
+
+        if (this.cloudBackend) {
+          await this.cloudBackend.syncFromCloud(this.runtime, repositoryId);
+        }
 
         const session = {
           id: `mcp-${generateId()}`,
@@ -609,6 +627,9 @@ export class McpServer {
         const capsuleId = args['capsuleId'] as string | undefined;
 
         if (action === 'get') {
+          if (this.cloudBackend) {
+            await this.cloudBackend.syncFromCloud(this.runtime, repositoryId);
+          }
           const latest = this.handoffs.getLatestHandoff(repositoryId, capsuleId);
           if (!latest) {
             resultText = 'No active handoff found for this repository/capsule.';
@@ -627,6 +648,9 @@ export class McpServer {
             known_issues: args['known_issues'] ?? [],
             summary: args['summary'] ?? 'Agent session handoff',
           });
+          if (this.cloudBackend) {
+            await this.cloudBackend.persistObject(created);
+          }
           resultText = `Handoff created [${created.id}]\n` + this.handoffs.formatCompactHandoff(created);
         }
         break;
@@ -657,6 +681,7 @@ export class McpServer {
               kind: 'decision',
               title: decision,
               statement: decision,
+              description: decision,
               ...(rationale !== undefined ? { rationale } : {}),
               status: 'decided',
             } as any,
@@ -664,19 +689,32 @@ export class McpServer {
           objId,
         );
 
+        if (this.cloudBackend) {
+          await this.cloudBackend.persistObject(created);
+        }
+
         if (supersedesId) {
-          this.runtime.relations.create({
+          const rel = this.runtime.relations.create({
             repositoryId,
             fromId: created.id,
             toId: supersedesId,
             relationType: 'supersedes',
           });
+          if (this.cloudBackend) {
+            await this.cloudBackend.persistRelation(rel);
+          }
           const existing = this.runtime.objects.getById(supersedesId);
           if (existing) {
             this.runtime.objects.update(supersedesId, {
               status: 'superseded',
               validUntil: now,
             });
+            if (this.cloudBackend) {
+              const updatedExisting = this.runtime.objects.getById(supersedesId);
+              if (updatedExisting) {
+                await this.cloudBackend.persistObject(updatedExisting);
+              }
+            }
           }
         }
 
@@ -710,6 +748,10 @@ export class McpServer {
           } as any,
         }, objId);
 
+        if (this.cloudBackend) {
+          await this.cloudBackend.persistObject(created);
+        }
+
         resultText = `Intent recorded [${created.id}]: "${intent}"`;
         break;
       }
@@ -730,6 +772,10 @@ export class McpServer {
           detectionMethod: 'agent_declaration',
           initialStatus: 'active',
         });
+
+        if (this.cloudBackend) {
+          await this.cloudBackend.persistObject(created);
+        }
 
         const view = this.placeholders.formatForRetrieval(created);
         resultText = `${view.warning}\nRegistered ID: ${created.id}`;
@@ -761,6 +807,10 @@ export class McpServer {
           } as any,
         }, objId);
 
+        if (this.cloudBackend) {
+          await this.cloudBackend.persistObject(created);
+        }
+
         resultText = `Question recorded [${created.id}]: "${question}"`;
         break;
       }
@@ -768,8 +818,18 @@ export class McpServer {
       case 'context.conflicts': {
         const repositoryId = args['repositoryId'] as string;
         const resource = args['resource'] as string | undefined;
-        const now = nowMs();
 
+        if (this.cloudBackend) {
+          const activeLeases = await this.cloudBackend.getActiveLeases(repositoryId, resource);
+          resultText = JSON.stringify({
+            repositoryId,
+            activeConflicts: [],
+            activeLeases,
+          }, null, 2);
+          break;
+        }
+
+        const now = nowMs();
         // Expire stale leases
         for (const [key, lease] of this.leases.entries()) {
           if (lease.expiresAt < now) {
@@ -795,6 +855,38 @@ export class McpServer {
         const resource = args['resource'] as string;
         const holderId = args['holderId'] as string;
         const ttlMs = (args['ttlMs'] as number | undefined) ?? 60_000;
+
+        if (this.cloudBackend) {
+          if (action === 'acquire') {
+            const res = await this.cloudBackend.acquireLease(repositoryId, resource, holderId, ttlMs);
+            if (res.conflict) {
+              return {
+                jsonrpc: '2.0',
+                id,
+                result: {
+                  content: [
+                    {
+                      type: 'text',
+                      text: `CONFLICT: Resource '${resource}' is already leased to '${res.holderId}' until ${new Date(res.expiresAt ?? 0).toISOString()}`,
+                    },
+                  ],
+                  isError: true,
+                },
+              };
+            }
+            resultText = `Lease acquired on '${resource}' by '${holderId}' (expires in ${ttlMs / 1000}s)`;
+          } else if (action === 'release') {
+            await this.cloudBackend.releaseLease(repositoryId, resource, holderId);
+            resultText = `Lease on '${resource}' released by '${holderId}'`;
+          } else {
+            const current = await this.cloudBackend.checkLease(repositoryId, resource);
+            resultText = current
+              ? `Active lease on '${resource}' held by '${current['holder_id']}' until ${new Date(Number(current['expires_at'])).toISOString()}`
+              : `Resource '${resource}' is currently free`;
+          }
+          break;
+        }
+
         const leaseKey = `${repositoryId}:${resource}`;
         const now = nowMs();
 

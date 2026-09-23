@@ -12,6 +12,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/http.js",
+    "start:http": "node dist/http.js",
+    "start:stdio": "node dist/cli.js",
     "test": "vitest run",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
@@ -22,7 +25,11 @@
     "@context-workspace/runtime": "workspace:*",
     "@context-workspace/retrieval": "workspace:*",
     "@context-workspace/context-compiler": "workspace:*",
-    "@context-workspace/steno": "workspace:*"
+    "@context-workspace/steno": "workspace:*",
+    "fastify": "^5.0.0",
+    "@fastify/cors": "^10.0.0",
+    "postgres": "^3.4.0",
+    "ioredis": "^5.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -1,0 +1,28 @@
+services:
+  # ==============================================================================
+  # Global Context Workspace — Cloud HTTP MCP Server
+  # Deployed on Render using Docker runtime
+  # ==============================================================================
+  - type: web
+    name: global-context-workspace-mcp
+    runtime: docker
+    dockerfilePath: apps/mcp/Dockerfile
+    dockerContext: .
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: MCP_API_KEY
+        sync: false

@@ -458,4 +458,71 @@ describe('MCP HTTP Transport (apps/mcp/src/http.ts)', () => {
     expect(retryResB.json().result.isError).toBeUndefined();
     expect(retryResB.json().result.content[0].text).toContain("Lease acquired on 'src/auth.ts' by 'agent-laptop-b'");
   });
+
+  it('13. POST /mcp context.report_decision creates and uses a repository without root_path when repositoryId is provided', async () => {
+    const freshRepoId = 'remote-client-repo-42';
+    // Ensure freshRepoId is NOT pre-created in the database
+    expect(runtime.repositories.getById(freshRepoId)).toBeUndefined();
+
+    // Remote client calls report_decision with NO root_path
+    const res = await server.fastify.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        jsonrpc: '2.0',
+        id: 30,
+        method: 'tools/call',
+        params: {
+          name: 'context.report_decision',
+          arguments: {
+            repositoryId: freshRepoId,
+            decision: 'Architectural decision without client-local filesystem root',
+            rationale: 'Cloud MCP agents connect remotely over HTTP without local disk access',
+          },
+        },
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.error).toBeUndefined();
+    expect(body.result.isError).toBeUndefined();
+    expect(body.result.content[0].text).toContain('Decision recorded');
+
+    // Verify repository was automatically created with clean storage path
+    const createdRepo = runtime.repositories.getById(freshRepoId);
+    expect(createdRepo).toBeDefined();
+    expect(createdRepo?.id).toBe(freshRepoId);
+    expect(createdRepo?.rootPath).toBeDefined();
+    expect(createdRepo?.rootPath).not.toBe('');
+    expect(createdRepo?.rootPath).toContain('repos');
+  });
+
+  it('14. POST /mcp context.report_decision works when repositoryId is omitted by a remote agent', async () => {
+    // Remote client calls report_decision omitting repositoryId and root_path
+    const res = await server.fastify.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        jsonrpc: '2.0',
+        id: 31,
+        method: 'tools/call',
+        params: {
+          name: 'context.report_decision',
+          arguments: {
+            decision: 'Decision with auto-resolved default repository',
+            rationale: 'Remote agent working on default cloud workspace context',
+          },
+        },
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.error).toBeUndefined();
+    expect(body.result.isError).toBeUndefined();
+    expect(body.result.content[0].text).toContain('Decision recorded');
+  });
 });

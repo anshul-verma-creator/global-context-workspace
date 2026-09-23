@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { ContextRuntime } from '@context-workspace/runtime';
 import { PlaceholderManager } from '@context-workspace/runtime';
 import { HandoffManager } from '@context-workspace/runtime';
@@ -73,7 +74,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Search term or keywords' },
-        repositoryId: { type: 'string', description: 'Repository ID to search within' },
+        repositoryId: { type: 'string', description: 'Repository ID to search within (optional in cloud mode, defaults to active repository)' },
         types: {
           type: 'array',
           items: { type: 'string' },
@@ -81,7 +82,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         },
         limit: { type: 'number', description: 'Maximum results to return (default: 10)' },
       },
-      required: ['query', 'repositoryId'],
+      required: ['query'],
     },
   },
   {
@@ -101,12 +102,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         task: { type: 'string', description: 'Current active task title or description' },
         resource: { type: 'string', description: 'File path currently being worked on' },
         tokenBudget: { type: 'number', description: 'Maximum token budget (default: 2000)' },
       },
-      required: ['repositoryId'],
+      required: [],
     },
   },
   {
@@ -116,7 +117,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         action: { type: 'string', enum: ['get', 'create'], description: 'Action to perform' },
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         capsuleId: { type: 'string', description: 'Optional capsule ID' },
         completed: { type: 'array', items: { type: 'string' }, description: 'Completed milestones (for create)' },
         remaining: { type: 'array', items: { type: 'string' }, description: 'Remaining tasks (for create)' },
@@ -126,7 +127,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         known_issues: { type: 'array', items: { type: 'string' }, description: 'Known issues (for create)' },
         summary: { type: 'string', description: 'Handoff summary (for create)' },
       },
-      required: ['action', 'repositoryId'],
+      required: ['action'],
     },
   },
   {
@@ -135,13 +136,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         capsuleId: { type: 'string', description: 'Optional capsule ID' },
         decision: { type: 'string', description: 'The decision statement' },
         rationale: { type: 'string', description: 'Why this decision was made' },
         supersedesId: { type: 'string', description: 'ID of an earlier decision this supersedes' },
       },
-      required: ['repositoryId', 'decision'],
+      required: ['decision'],
     },
   },
   {
@@ -150,12 +151,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         capsuleId: { type: 'string', description: 'Optional capsule ID' },
         intent: { type: 'string', description: 'Planned action description' },
         targetResources: { type: 'array', items: { type: 'string' }, description: 'Files planned to touch' },
       },
-      required: ['repositoryId', 'intent'],
+      required: ['intent'],
     },
   },
   {
@@ -164,13 +165,13 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         capsuleId: { type: 'string', description: 'Optional capsule ID' },
         resource: { type: 'string', description: 'File path containing the placeholder' },
         description: { type: 'string', description: 'Description of the mock/stub' },
         intendedReplacement: { type: 'string', description: 'What this should be replaced with' },
       },
-      required: ['repositoryId', 'resource', 'description'],
+      required: ['resource', 'description'],
     },
   },
   {
@@ -179,12 +180,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         capsuleId: { type: 'string', description: 'Optional capsule ID' },
         question: { type: 'string', description: 'The question or blocker' },
         context: { type: 'string', description: 'Background context for the question' },
       },
-      required: ['repositoryId', 'question'],
+      required: ['question'],
     },
   },
   {
@@ -193,10 +194,10 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: {
       type: 'object',
       properties: {
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         resource: { type: 'string', description: 'Optional specific file path to check' },
       },
-      required: ['repositoryId'],
+      required: [],
     },
   },
   {
@@ -206,12 +207,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: {
         action: { type: 'string', enum: ['acquire', 'release', 'check'], description: 'Lease action' },
-        repositoryId: { type: 'string', description: 'Repository ID' },
+        repositoryId: { type: 'string', description: 'Repository ID (optional in cloud mode, defaults to active repository)' },
         resource: { type: 'string', description: 'Resource file path' },
         holderId: { type: 'string', description: 'Agent ID or Session ID holding the lease' },
         ttlMs: { type: 'number', description: 'Lease TTL in ms (default: 60000)' },
       },
-      required: ['action', 'repositoryId', 'resource', 'holderId'],
+      required: ['action', 'resource', 'holderId'],
     },
   },
 ];
@@ -505,19 +506,57 @@ export class McpServer {
   }
 
   /**
+   * Resolve repository ID from tool arguments or fallback to active/default repository.
+   * Remote cloud MCP requests may omit repositoryId when working on a shared cloud project.
+   */
+  private _resolveRepositoryId(requestedId?: string): string {
+    if (requestedId && typeof requestedId === 'string' && requestedId.trim() !== '') {
+      return requestedId.trim();
+    }
+    // 1. Prefer existing registered repository
+    const registered = this.runtime.repositories.list();
+    if (registered.length > 0 && registered[0]) {
+      return registered[0].id;
+    }
+    // 2. Fallback to active repository from existing context objects
+    const active = this.runtime.objects.listDistinctRepositoryIds();
+    if (active.length > 0 && active[0]) {
+      return active[0];
+    }
+    // 3. Fallback to default cloud repository ID
+    return process.env['DEFAULT_REPOSITORY_ID'] ?? 'global-context';
+  }
+
+  /**
+   * Cleanly adapt the cloud MCP storage path for repositories without requiring
+   * a client-local filesystem root.
+   */
+  private _getCloudStoragePath(repositoryId: string): string {
+    const dbPath = this.runtime.db.db.name;
+    const baseDir = dbPath && dbPath !== ':memory:' ? path.dirname(path.resolve(dbPath)) : process.cwd();
+    return path.join(baseDir, 'repos', repositoryId);
+  }
+
+  /**
    * Ensure a repository record exists in the repositories table.
    * Called by write tools that reference a repositoryId.
-   * Safe to call repeatedly — uses INSERT OR IGNORE semantics.
+   * Supports both local filesystem repositories and remote cloud-hosted repositories.
+   * Returns the resolved repositoryId.
    */
-  private _ensureRepository(repositoryId: string): void {
-    if (!this.runtime.repositories.getById(repositoryId)) {
+  private _ensureRepository(repositoryId?: string): string {
+    const id = this._resolveRepositoryId(repositoryId);
+    if (!this.runtime.repositories.getById(id)) {
+      const storagePath = this._getCloudStoragePath(id);
+
       this.runtime.repositories.create({
-        id: repositoryId,
-        workspaceId: 'mcp-default',
-        rootPath: repositoryId,
-        name: repositoryId,
+        id,
+        workspaceId: this.cloudBackend ? 'cloud-workspace' : 'mcp-default',
+        rootPath: storagePath,
+        name: id,
+        remoteUrl: `cloud://${id}`,
       });
     }
+    return id;
   }
 
   private async _handleToolCall(
@@ -530,7 +569,7 @@ export class McpServer {
     switch (toolName) {
       case 'context.search': {
         const query = args['query'] as string;
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const types = args['types'] as string[] | undefined;
         const limit = (args['limit'] as number | undefined) ?? 10;
 
@@ -584,7 +623,7 @@ export class McpServer {
       }
 
       case 'context.current': {
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const capsuleId = args['capsuleId'] as string | undefined;
         const task = args['task'] as string | undefined;
         const resource = args['resource'] as string | undefined;
@@ -623,7 +662,7 @@ export class McpServer {
 
       case 'context.handoff': {
         const action = args['action'] as 'get' | 'create';
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const capsuleId = args['capsuleId'] as string | undefined;
 
         if (action === 'get') {
@@ -657,12 +696,11 @@ export class McpServer {
       }
 
       case 'context.report_decision': {
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const capsuleId = args['capsuleId'] as string | undefined;
         const decision = args['decision'] as string;
         const rationale = args['rationale'] as string | undefined;
         const supersedesId = args['supersedesId'] as string | undefined;
-        this._ensureRepository(repositoryId);
         const now = nowMs();
         const objId = generateId();
 
@@ -723,11 +761,10 @@ export class McpServer {
       }
 
       case 'context.report_intent': {
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const capsuleId = args['capsuleId'] as string | undefined;
         const intent = args['intent'] as string;
         const targetResources = args['targetResources'] as string[] | undefined;
-        this._ensureRepository(repositoryId);
         const now = nowMs();
         const objId = generateId();
 
@@ -757,7 +794,7 @@ export class McpServer {
       }
 
       case 'context.report_placeholder': {
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const capsuleId = args['capsuleId'] as string | undefined;
         const resource = args['resource'] as string;
         const description = args['description'] as string;
@@ -783,7 +820,7 @@ export class McpServer {
       }
 
       case 'context.report_question': {
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const capsuleId = args['capsuleId'] as string | undefined;
         const question = args['question'] as string;
         const contextStr = args['context'] as string | undefined;
@@ -816,7 +853,7 @@ export class McpServer {
       }
 
       case 'context.conflicts': {
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const resource = args['resource'] as string | undefined;
 
         if (this.cloudBackend) {
@@ -851,7 +888,7 @@ export class McpServer {
 
       case 'context.lease': {
         const action = args['action'] as 'acquire' | 'release' | 'check';
-        const repositoryId = args['repositoryId'] as string;
+        const repositoryId = this._ensureRepository(args['repositoryId'] as string | undefined);
         const resource = args['resource'] as string;
         const holderId = args['holderId'] as string;
         const ttlMs = (args['ttlMs'] as number | undefined) ?? 60_000;

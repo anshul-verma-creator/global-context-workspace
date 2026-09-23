@@ -51,6 +51,9 @@ export class CloudBackend {
         lazyConnect: true,
         maxRetriesPerRequest: 3,
       });
+      this.redis.on('error', (err) => {
+        log.warn('Redis client error', { error: String(err) });
+      });
       log.info('Redis client created for cloud MCP backend');
     }
   }
@@ -473,6 +476,10 @@ export class CloudBackend {
 
   /**
    * Execute schema migrations to ensure cloud tables exist.
+   * Note: PostgreSQL prepared statements (extended query protocol) disallow
+   * multiple commands in a single statement. Each DDL statement (CREATE TABLE,
+   * CREATE INDEX) is executed individually to avoid "cannot insert multiple
+   * commands into a prepared statement" errors.
    */
   private async runMigrations(): Promise<void> {
     // 1. Create schema_migrations
@@ -481,10 +488,10 @@ export class CloudBackend {
         id         INTEGER PRIMARY KEY,
         name       TEXT NOT NULL,
         applied_at BIGINT NOT NULL
-      );
+      )
     `;
 
-    // 2. Create context_objects
+    // 2. Create context_objects table and indexes
     await this.sql`
       CREATE TABLE IF NOT EXISTS context_objects (
         id            TEXT PRIMARY KEY,
@@ -501,12 +508,16 @@ export class CloudBackend {
         version       INTEGER NOT NULL DEFAULT 1,
         created_at    BIGINT NOT NULL,
         updated_at    BIGINT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_ctx_objects_repository ON context_objects(repository_id, type, status);
-      CREATE INDEX IF NOT EXISTS idx_ctx_objects_resource ON context_objects(resource) WHERE resource IS NOT NULL;
+      )
+    `;
+    await this.sql`
+      CREATE INDEX IF NOT EXISTS idx_ctx_objects_repository ON context_objects(repository_id, type, status)
+    `;
+    await this.sql`
+      CREATE INDEX IF NOT EXISTS idx_ctx_objects_resource ON context_objects(resource) WHERE resource IS NOT NULL
     `;
 
-    // 3. Create relations
+    // 3. Create relations table and indexes
     await this.sql`
       CREATE TABLE IF NOT EXISTS relations (
         id            TEXT PRIMARY KEY,
@@ -516,12 +527,16 @@ export class CloudBackend {
         to_id         TEXT NOT NULL,
         created_at    BIGINT NOT NULL,
         metadata      JSONB
-      );
-      CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_id, relation_type);
-      CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_id, relation_type);
+      )
+    `;
+    await this.sql`
+      CREATE INDEX IF NOT EXISTS idx_relations_from ON relations(from_id, relation_type)
+    `;
+    await this.sql`
+      CREATE INDEX IF NOT EXISTS idx_relations_to ON relations(to_id, relation_type)
     `;
 
-    // 4. Create leases
+    // 4. Create leases table and indexes
     await this.sql`
       CREATE TABLE IF NOT EXISTS leases (
         id            TEXT PRIMARY KEY,
@@ -534,11 +549,15 @@ export class CloudBackend {
         expires_at    BIGINT NOT NULL,
         ttl_ms        INTEGER NOT NULL,
         status        TEXT NOT NULL DEFAULT 'active'
-      );
+      )
+    `;
+    await this.sql`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_leases_active_resource
         ON leases(repository_id, resource)
-        WHERE status = 'active';
-      CREATE INDEX IF NOT EXISTS idx_leases_expires ON leases(expires_at) WHERE status = 'active';
+        WHERE status = 'active'
+    `;
+    await this.sql`
+      CREATE INDEX IF NOT EXISTS idx_leases_expires ON leases(expires_at) WHERE status = 'active'
     `;
   }
 }

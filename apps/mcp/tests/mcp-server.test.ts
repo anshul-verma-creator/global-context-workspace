@@ -46,6 +46,9 @@ describe('Phase 20 — MCP Server', () => {
     expect(res.result).toBeDefined();
     expect(res.result.protocolVersion).toBe('2024-11-05');
     expect(res.result.serverInfo.name).toBe('global-context-workspace-mcp');
+    expect(res.result.instructions).toBeDefined();
+    expect(res.result.instructions).toContain('context.current');
+    expect(res.result.instructions).toContain('context.report_decision');
   });
 
   it('lists all 10 required context tools via tools/list', async () => {

@@ -3,7 +3,7 @@ import fastifyCors from '@fastify/cors';
 import path from 'node:path';
 import fs from 'node:fs';
 import { ContextRuntime } from '@context-workspace/runtime';
-import { McpServer, type JsonRpcRequest, type JsonRpcResponse } from './mcp-server.js';
+import { McpServer, MCP_SERVER_INSTRUCTIONS, type JsonRpcRequest, type JsonRpcResponse } from './mcp-server.js';
 import { CloudBackend } from './cloud-backend.js';
 import { createLogger } from '@context-workspace/shared';
 
@@ -190,6 +190,7 @@ export async function buildHttpServer(options: HttpServerOptions = {}): Promise<
         tools: {},
         resources: {},
       },
+      instructions: MCP_SERVER_INSTRUCTIONS,
     });
   });
 

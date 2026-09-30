@@ -66,10 +66,18 @@ export interface McpToolDefinition {
   };
 }
 
+export const MCP_SERVER_INSTRUCTIONS = `When working on a repository connected to this Context Workspace MCP server, use the context tools as a standard part of normal development workflow:
+- Before making substantial code changes or starting a new task, call context.current or context.search to retrieve shared project decisions, conventions, active tasks, and context left by other agents.
+- When beginning work on shared files or modules, declare planned changes with context.report_intent, and check for concurrent work using context.conflicts or context.lease.
+- When making non-trivial architectural, design, or implementation decisions, record them with context.report_decision (or supersede earlier decisions with supersedesId).
+- When introducing temporary stubs, mocks, or placeholders, report them with context.report_placeholder.
+- When completing a milestone, session, or significant task, record progress and next steps with context.handoff.
+These tools provide project memory across sessions and agents. Do not wait for the developer to explicitly say "use MCP" to call them.`;
+
 export const MCP_TOOLS: McpToolDefinition[] = [
   {
     name: 'context.search',
-    description: 'Search repository context objects by keyword, types, and scope. Returns compact relevant context.',
+    description: 'Search shared project context when existing decisions, conventions, active tasks, prior agent work, or project history may affect the current task. Use before implementing non-trivial changes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -87,7 +95,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.get',
-    description: 'Retrieve a specific context object by unique identifier.',
+    description: 'Retrieve full details of a specific context object by ID when referenced in search results, handoffs, or decision relationships.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -98,7 +106,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.current',
-    description: 'Compile active minimum context for the current task/resource within token budget.',
+    description: 'Compile active shared project context at the beginning of a task or before modifying files to understand current decisions, constraints, ongoing work, and repository state within token budget.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -112,7 +120,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.handoff',
-    description: 'Get latest structured handoff or record a new handoff between agents.',
+    description: 'Get the latest handoff at the start of a session to understand recent progress, or record a new handoff after completing meaningful work to preserve context and next steps for subsequent agents.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -132,7 +140,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.report_decision',
-    description: 'Record an architectural or implementation decision.',
+    description: 'Record an architectural, design, or implementation decision when making significant technical choices or superseding earlier decisions, keeping other agents and sessions aligned.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -147,7 +155,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.report_intent',
-    description: 'Declare upcoming intent before modifying files to avoid conflicts with other agents.',
+    description: 'Declare planned work and target files before editing shared code to notify other collaborating agents and avoid conflicting changes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -161,7 +169,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.report_placeholder',
-    description: 'Report a placeholder, mock, or stub with its intended replacement so other agents do not treat it as authoritative.',
+    description: 'Record a temporary mock, stub, or placeholder introduced during development with its intended replacement so other agents do not treat it as complete.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -176,7 +184,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.report_question',
-    description: 'Record an open question or clarification blocker.',
+    description: 'Record an unresolved technical question, ambiguity, or blocker that requires clarification before proceeding.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -190,7 +198,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.conflicts',
-    description: 'Check for active conflicts or concurrent resource leases in the repository.',
+    description: 'Check for active resource leases and concurrent edit conflicts before modifying files or starting work on shared modules.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -202,7 +210,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'context.lease',
-    description: 'Acquire, check, or release a resource lease to prevent edit collisions.',
+    description: 'Acquire, verify, or release exclusive resource leases before and after editing critical files to prevent concurrent editing collisions between agents.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -285,6 +293,7 @@ export class McpServer {
                 name: 'global-context-workspace-mcp',
                 version: '0.1.0',
               },
+              instructions: MCP_SERVER_INSTRUCTIONS,
             },
           };
         }

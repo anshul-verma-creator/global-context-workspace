@@ -70,6 +70,8 @@ describe('MCP HTTP Transport (apps/mcp/src/http.ts)', () => {
     expect(body.name).toBe('global-context-workspace-mcp');
     expect(body.protocolVersion).toBe('2024-11-05');
     expect(body.endpoint).toBe('/mcp');
+    expect(body.instructions).toBeDefined();
+    expect(body.instructions).toContain('context.current');
   });
 
   it('4. POST /mcp handles initialize handshake with JSON-RPC 2.0', async () => {
@@ -97,6 +99,8 @@ describe('MCP HTTP Transport (apps/mcp/src/http.ts)', () => {
     expect(body.result.serverInfo.name).toBe('global-context-workspace-mcp');
     expect(body.result.capabilities.tools).toBeDefined();
     expect(body.result.capabilities.resources).toBeDefined();
+    expect(body.result.instructions).toBeDefined();
+    expect(body.result.instructions).toContain('context.current');
   });
 
   it('5. POST /mcp handles notifications/initialized returning 204 No Content', async () => {
